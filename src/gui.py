@@ -117,7 +117,7 @@ def gui(config_raw: str, data_raw: str):
 @stub.local_entrypoint()
 def main():
     dir = os.path.dirname(__file__)
-    with open(f"{dir}/config.yml", "r") as cfg, open(f"{dir}/my_data.jsonl", "r") as data:
+    with open(f"{dir}/config.yml", "r") as cfg, open(f"{dir}/ukdata.jsonl", "r") as data:
         handle = gui.spawn(cfg.read(), data.read())
     url = stub.q.get()
     print(f"GUI available at -> {url}\n")

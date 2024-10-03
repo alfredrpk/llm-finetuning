@@ -1,26 +1,42 @@
-from modal import Stub, Image, Volume, Secret
+from modal import App, Image, Volume, Secret
 import os
 
-APP_NAME = "example-axolotl"
+APP_NAME = "uk-finetuning"
+
+# Axolotl image hash corresponding to 0.4.0 release (2024-02-14)
+AXOLOTL_REGISTRY_SHA = (
+    "8ec2116dd36ecb9fb23702278ac612f27c1d4309eca86ad0afd3a3fe4a80ad5b"
+)
+
 
 axolotl_image = (
-    Image.from_registry("winglian/axolotl:main-py3.10-cu118-2.0.1")
-    .run_commands(
-        "git clone https://github.com/OpenAccess-AI-Collective/axolotl /root/axolotl",
-        "cd /root/axolotl && git checkout a581e9f8f66e14c22ec914ee792dd4fe073e62f6",
+    Image.from_registry(f"winglian/axolotl@sha256:{AXOLOTL_REGISTRY_SHA}")
+    .pip_install(
+        "huggingface_hub==0.20.3",
+        "hf-transfer==0.1.5",
+        "wandb==0.16.3",
+        "fastapi==0.110.0",
+        "pydantic==2.6.3",
     )
-    .pip_install("huggingface_hub==0.17.1", "hf-transfer==0.1.3")
-    .env(dict(HUGGINGFACE_HUB_CACHE="/pretrained", HF_HUB_ENABLE_HF_TRANSFER="1"))
+    .env(
+        dict(
+            HUGGINGFACE_HUB_CACHE="/pretrained",
+            HF_HUB_ENABLE_HF_TRANSFER="1",
+            TQDM_DISABLE="true",
+        )
+    )
 )
 
-vllm_image = (
-    Image.from_registry("nvcr.io/nvidia/pytorch:23.10-py3")
-    .pip_install("vllm==0.2.3")
+vllm_image = Image.from_registry(
+    "nvidia/cuda:12.1.0-base-ubuntu22.04", add_python="3.10"
+).pip_install(
+    "vllm==0.2.6",
+    "torch==2.1.2",
 )
 
-stub = Stub(APP_NAME, secrets=[Secret.from_name("huggingface")])
+app = App(APP_NAME, secrets=[Secret.from_name("my-wandb-secret"), Secret.from_name("huggingface")])
 
 # Volumes for pre-trained models and training runs.
-pretrained_volume = Volume.persisted("example-pretrained-vol")
-runs_volume = Volume.persisted("example-runs-vol")
+pretrained_volume = Volume.from_name("uk-pretrained-vol", create_if_missing=True)
+runs_volume = Volume.from_name("uk-runs-vol", create_if_missing=True)
 VOLUME_CONFIG: dict[str | os.PathLike, Volume] = {"/pretrained": pretrained_volume, "/runs": runs_volume}

@@ -1,3 +1,3 @@
-from .common import stub
-from .train import train, launch
+from .common import app
+from .train_checkpoint import train, launch
 from .inference import Inference
